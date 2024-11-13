@@ -23,21 +23,21 @@
 </ul>
 
 <h2 id="project-overview">Project Overview</h2>
-<p>This project is a simple chatbot that utilizes Anthropic's Claude AI model for generating conversational responses. The web interface is developed using Streamlit and offers a smooth and interactive chat experience. Users can configure the response creativity and length using the sidebar options.</p>
+<p>This project is a simple chatbot utilizing Anthropic's Claude AI model for generating conversational responses. The web interface is developed using Streamlit and offers a smooth, interactive chat experience. Users can configure the response creativity and length using the sidebar options.</p>
 
 <h2 id="prerequisites">Prerequisites</h2>
 <p>Before running this project, ensure you have the following installed:</p>
 <ul>
     <li><strong>Python 3.8+</strong></li>
     <li><strong>pip</strong> (Python package installer)</li>
-    <li><strong>Anthropic API Key</strong> (you can get it by signing up for Anthropic)</li>
+    <li><strong>Anthropic API Key</strong> (You can obtain it by signing up for Anthropic's API access)</li>
 </ul>
 
 <h2 id="installation">Installation</h2>
 
 <h3>Step 1: Clone the Repository</h3>
-<pre><code>git clone https://github.com/your-username/claude-chatbot-streamlit.git
-cd claude-chatbot-streamlit
+<pre><code>git clone https://github.com/devu-13here/New-Repo.git
+cd New-Repo
 </code></pre>
 
 <h3>Step 2: Create a Virtual Environment</h3>
@@ -80,13 +80,11 @@ cd claude-chatbot-streamlit
 <p><strong>Customizable Parameters</strong>: The creativity (temperature) and response length (max tokens) of the chatbot can be adjusted via sliders in the Streamlit sidebar.</p>
 
 <h2 id="project-structure">Project Structure</h2>
-<pre><code>claude-chatbot-streamlit/
+<pre><code>New-Repo/
 │
 ├── src/
 │   └── main.py               # Main script for Streamlit chatbot
-│
 ├── venv/                     # Virtual environment (excluded in .gitignore)
-│
 ├── requirements.txt           # Python dependencies
 ├── config.json                # API key file (add this manually)
 ├── README.md                  # Project documentation
