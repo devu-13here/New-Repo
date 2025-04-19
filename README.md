@@ -70,7 +70,7 @@ cd New-Repo
 
 <h3>3. Run the Application</h3>
 <p>Start the Streamlit app by running the following command:</p>
-<pre><code>streamlit run src/main.py</code></pre>
+<pre><code>python -m streamlit run src/main.py</code></pre>
 
 <h3>4. Interact with the Chatbot</h3>
 <p>Open the URL <code>http://localhost:8501</code> in your browser. Type a message in the chat input field and start interacting with the Claude-powered chatbot.</p>
