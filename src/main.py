@@ -1,98 +1,102 @@
-import os
+# ────────────────────────────────────────────────────────────────────────────────
+#  Claude Chatbot • Streamlit front‑end
+#  Requirements  : streamlit >= 1.25  •  requests
+# ────────────────────────────────────────────────────────────────────────────────
 import json
-import streamlit as st
+import os
+from pathlib import Path
+
 import requests
+import streamlit as st
 
-# Load the Anthropic API key from the config file
-working_dir = os.path.dirname(os.path.abspath(__file__))
-config_file_path = os.path.join(working_dir, "config.json")
+# ─── 1) Load API key ────────────────────────────────────────────────────────────
+def load_api_key() -> str:
+    """Return Anthropic API key (env var wins, else config.json)."""
+    if "ANTHROPIC_API_KEY" in os.environ:
+        return os.environ["ANTHROPIC_API_KEY"]
 
-with open(config_file_path, "r") as config_file:
-    config_data = json.load(config_file)
-
-# Retrieve the API key from the config file
-ANTHROPIC_API_KEY = config_data["ANTHROPIC_API_KEY"]
-
-# Streamlit page configuration
-st.set_page_config(
-    page_title="Claude Chatbot",
-    page_icon="🤖",
-    layout="centered",
-    initial_sidebar_state="expanded"
-)
-
-# Streamlit sidebar for additional options
-with st.sidebar:
-    st.title("🤖 Claude Chatbot")
-    st.write("Powered by Anthropic's Claude model")
-    st.write("Use this chatbot to interact with the Claude AI model. Feel free to ask any questions!")
-    st.markdown("---")
-    st.write("### Chat Settings")
-    temperature = st.slider("Response Creativity (Temperature)", min_value=0.0, max_value=1.0, value=0.7, step=0.1)
-    max_tokens = st.slider("Max Tokens (Response Length)", min_value=50, max_value=500, value=200, step=50)
-
-# Initialize chat history if not already present
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-# Page title
-st.markdown("<h1 style='text-align: center;'>🤖 Claude AI Chatbot</h1>", unsafe_allow_html=True)
-
-# Show chat history
-for message in st.session_state.chat_history:
-    if message["role"] == "user":
-        with st.chat_message("user"):
-            st.markdown(f"<div style='background-color: #e0f7fa; padding: 10px; border-radius: 10px;'>{message['content']}</div>", unsafe_allow_html=True)
-    else:
-        with st.chat_message("assistant"):
-            st.markdown(f"<div style='background-color: #f1f8e9; padding: 10px; border-radius: 10px;'>{message['content']}</div>", unsafe_allow_html=True)
-
-# Input field for user's message
-user_input = st.chat_input("Type your message here...")
-
-if user_input:
-    # Add user's message to chat history and display it
-    st.chat_message("user").markdown(f"<div style='background-color: #e0f7fa; padding: 10px; border-radius: 10px;'>{user_input}</div>", unsafe_allow_html=True)
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
-
-    # Send user's message to Claude API
+    cfg_path = Path(__file__).with_name("config.json")
     try:
-        headers = {
-            "x-api-key": ANTHROPIC_API_KEY,
-            "Content-Type": "application/json"
-        }
+        with cfg_path.open() as f:
+            return json.load(f)["ANTHROPIC_API_KEY"]
+    except FileNotFoundError:
+        st.error("`config.json` not found and env var `ANTHROPIC_API_KEY` missing.")
+        st.stop()
+    except KeyError:
+        st.error("`ANTHROPIC_API_KEY` key missing in config.json.")
+        st.stop()
 
-        # Prepare the conversation history for Claude
-        chat_history_text = "\n\n".join([f"Human: {msg['content']}\nAssistant:" if msg["role"] == "assistant" else f"Human: {msg['content']}" for msg in st.session_state.chat_history])
 
-        # API Payload
-        payload = {
-            "prompt": f"{chat_history_text}\nHuman: {user_input}\nAssistant:",
-            "model": "claude-v1.3",  # Make sure the model name is correct
-            "temperature": temperature,
-            "max_tokens_to_sample": max_tokens,
-            "stop_sequences": ["\nHuman:"]
-        }
+API_KEY = load_api_key()
 
-        # API Request to Anthropic
-        response = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=payload)
+# ─── 2) Streamlit page & sidebar ───────────────────────────────────────────────
+st.set_page_config(page_title="Claude Chatbot", page_icon="🤖", layout="centered")
 
-        # Check for a successful response
-        if response.status_code == 200:
-            response_json = response.json()
-            assistant_reply = response_json.get("completion", "Sorry, I couldn't process that.")
-        else:
-            assistant_reply = f"Error: {response.status_code} - {response.text}"
+with st.sidebar:
+    st.title("🤖 Claude Chatbot")
+    st.caption("Powered by Anthropic")
+    st.markdown("---")
+    temperature = st.slider("Creativity (temperature)", 0.0, 1.0, 0.7, 0.1)
+    max_tokens = st.slider("Max tokens in reply", 1, 500, 200, 10)
+    if st.button("🗑 Clear chat"):
+        st.session_state.pop("history", None)
+        st.experimental_rerun()
 
-        # Add the assistant's response to chat history and display it
-        st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
-        with st.chat_message("assistant"):
-            st.markdown(f"<div style='background-color: #f1f8e9; padding: 10px; border-radius: 10px;'>{assistant_reply}</div>", unsafe_allow_html=True)
+# ─── 3) Session state for history ──────────────────────────────────────────────
+if "history" not in st.session_state:
+    # each item: {"role": "user"|"assistant", "content": "..."}
+    st.session_state.history = []
 
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
+# ─── 4) Show chat so far ───────────────────────────────────────────────────────
+st.markdown("<h1 style='text-align:center;'>🤖 Claude Chatbot</h1>",
+            unsafe_allow_html=True)
 
-# Clear the chat session button
-if st.sidebar.button("Clear Chat"):
-    st.session_state.chat_history = []
-    st.experimental_rerun()
+for msg in st.session_state.history:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+
+# ─── 5) User input box ─────────────────────────────────────────────────────────
+user_text = st.chat_input("Type your message…")
+
+# ─── 6) If user sent a message, call Anthropic API ─────────────────────────────
+if user_text:
+    # add user line to history & echo to UI
+    st.session_state.history.append({"role": "user", "content": user_text})
+    with st.chat_message("user"):
+        st.write(user_text)
+
+    # ---- build prompt in Anthropic “alternating” format ----
+    prompt_lines = []
+    for item in st.session_state.history:
+        who = "Human" if item["role"] == "user" else "Assistant"
+        prompt_lines.append(f"{who}: {item['content']}")
+    prompt_lines.append("Assistant:")          # Claude should answer next
+    prompt = "\n\n".join(prompt_lines)
+
+    # ---- call API ----
+    payload = {
+        "model": "claude-v1.3",
+        "prompt": prompt,
+        "temperature": temperature,
+        "max_tokens_to_sample": max_tokens,
+        "stop_sequences": ["\nHuman:"]
+    }
+    headers = {
+        "x-api-key": API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+    }
+
+    try:
+        r = requests.post("https://api.anthropic.com/v1/complete",
+                          headers=headers, json=payload, timeout=30)
+        r.raise_for_status()
+        assistant_reply = r.json()["completion"].strip()
+    except requests.exceptions.RequestException as e:
+        assistant_reply = f"API error: {e}"
+
+    # ---- display & remember assistant reply ----
+    st.session_state.history.append({"role": "assistant",
+                                     "content": assistant_reply})
+    with st.chat_message("assistant"):
+        st.write(assistant_reply)
