@@ -1,33 +1,23 @@
 # ────────────────────────────────────────────────────────────────────────────────
 #  Claude Chatbot • Streamlit front‑end
-#  Requirements  : streamlit >= 1.25  •  requests
+#  Requirements  : streamlit >= 1.25  •  anthropic
 # ────────────────────────────────────────────────────────────────────────────────
-import json
 import os
-from pathlib import Path
-
-import requests
 import streamlit as st
+import anthropic
 
-# ─── 1) Load API key ────────────────────────────────────────────────────────────
-def load_api_key() -> str:
-    """Return Anthropic API key (env var wins, else config.json)."""
-    if "ANTHROPIC_API_KEY" in os.environ:
-        return os.environ["ANTHROPIC_API_KEY"]
+# ─── 1) Get API key and initialize client ─────────────────────────────────────
+# The anthropic client defaults to os.environ.get("ANTHROPIC_API_KEY")
+# We add a check to provide a user-friendly error message if the key is not set.
+if not os.environ.get("ANTHROPIC_API_KEY"):
+    st.error("`ANTHROPIC_API_KEY` environment variable not set.")
+    st.stop()
 
-    cfg_path = Path(__file__).with_name("config.json")
-    try:
-        with cfg_path.open() as f:
-            return json.load(f)["ANTHROPIC_API_KEY"]
-    except FileNotFoundError:
-        st.error("`config.json` not found and env var `ANTHROPIC_API_KEY` missing.")
-        st.stop()
-    except KeyError:
-        st.error("`ANTHROPIC_API_KEY` key missing in config.json.")
-        st.stop()
-
-
-API_KEY = load_api_key()
+try:
+    client = anthropic.Anthropic()
+except Exception as e:
+    st.error(f"Failed to initialize Anthropic client: {e}")
+    st.stop()
 
 # ─── 2) Streamlit page & sidebar ───────────────────────────────────────────────
 st.set_page_config(page_title="Claude Chatbot", page_icon="🤖", layout="centered")
@@ -37,10 +27,10 @@ with st.sidebar:
     st.caption("Powered by Anthropic")
     st.markdown("---")
     temperature = st.slider("Creativity (temperature)", 0.0, 1.0, 0.7, 0.1)
-    max_tokens = st.slider("Max tokens in reply", 1, 500, 200, 10)
+    max_tokens = st.slider("Max tokens in reply", 1, 4096, 512, 10)
     if st.button("🗑 Clear chat"):
         st.session_state.pop("history", None)
-        st.experimental_rerun()
+        st.rerun()
 
 # ─── 3) Session state for history ──────────────────────────────────────────────
 if "history" not in st.session_state:
@@ -65,38 +55,23 @@ if user_text:
     with st.chat_message("user"):
         st.write(user_text)
 
-    # ---- build prompt in Anthropic “alternating” format ----
-    prompt_lines = []
-    for item in st.session_state.history:
-        who = "Human" if item["role"] == "user" else "Assistant"
-        prompt_lines.append(f"{who}: {item['content']}")
-    prompt_lines.append("Assistant:")          # Claude should answer next
-    prompt = "\n\n".join(prompt_lines)
-
     # ---- call API ----
-    payload = {
-        "model": "claude-v1.3",
-        "prompt": prompt,
-        "temperature": temperature,
-        "max_tokens_to_sample": max_tokens,
-        "stop_sequences": ["\nHuman:"]
-    }
-    headers = {
-        "x-api-key": API_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json"
-    }
-
     try:
-        r = requests.post("https://api.anthropic.com/v1/complete",
-                          headers=headers, json=payload, timeout=30)
-        r.raise_for_status()
-        assistant_reply = r.json()["completion"].strip()
-    except requests.exceptions.RequestException as e:
-        assistant_reply = f"API error: {e}"
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                response = client.messages.create(
+                    model="claude-3-haiku-20240307",
+                    messages=st.session_state.history,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+                assistant_reply = response.content[0].text
+                st.write(assistant_reply)
 
-    # ---- display & remember assistant reply ----
-    st.session_state.history.append({"role": "assistant",
-                                     "content": assistant_reply})
-    with st.chat_message("assistant"):
-        st.write(assistant_reply)
+        # ---- remember assistant reply ----
+        st.session_state.history.append({"role": "assistant", "content": assistant_reply})
+
+    except anthropic.APIError as e:
+        st.error(f"Anthropic API error: {e.status_code} {e.response.text}")
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
