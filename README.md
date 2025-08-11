@@ -30,7 +30,6 @@
 <ul>
     <li><strong>Python 3.8+</strong></li>
     <li><strong>pip</strong> (Python package installer)</li>
-    <li><strong>Anthropic API Key</strong> (You can obtain it by signing up for Anthropic's API access)</li>
 </ul>
 
 <h2 id="installation">Installation</h2>
@@ -58,35 +57,35 @@ cd New-Repo
 
 <h2 id="usage">Usage</h2>
 
-<h3>1. Get Your Anthropic API Key</h3>
-<p>Sign up for Anthropic API access and get your API key.</p>
+<h3>1. Set Your Anthropic API Key</h3>
+<p>To use this chatbot, you need an Anthropic API key. You can get one from the <a href="https://console.anthropic.com/">Anthropic Console</a>.</p>
+<p>Once you have your key, set it as an environment variable named <code>ANTHROPIC_API_KEY</code>.</p>
+<p>For <strong>macOS/Linux</strong>:</p>
+<pre><code>export ANTHROPIC_API_KEY="your_anthropic_api_key_here"</code></pre>
+<p>For <strong>Windows (Command Prompt)</strong>:</p>
+<pre><code>set ANTHROPIC_API_KEY="your_anthropic_api_key_here"</code></pre>
+<p>For <strong>Windows (PowerShell)</strong>:</p>
+<pre><code>$env:ANTHROPIC_API_KEY="your_anthropic_api_key_here"</code></pre>
+<p><strong>Note:</strong> You may need to restart your terminal or IDE for the environment variable to be recognized.</p>
 
-<h3>2. Add Your API Key</h3>
-<p>Create a <code>config.json</code> file in the project directory with the following content:</p>
-<pre><code>{
-  "ANTHROPIC_API_KEY": "your_anthropic_api_key_here"
-}
-</code></pre>
-
-<h3>3. Run the Application</h3>
+<h3>2. Run the Application</h3>
 <p>Start the Streamlit app by running the following command:</p>
-<pre><code>python -m streamlit run src/main.py</code></pre>
+<pre><code>streamlit run src/main.py</code></pre>
 
-<h3>4. Interact with the Chatbot</h3>
-<p>Open the URL <code>http://localhost:8501</code> in your browser. Type a message in the chat input field and start interacting with the Claude-powered chatbot.</p>
+<h3>3. Interact with the Chatbot</h3>
+<p>Open the URL provided by Streamlit (usually <code>http://localhost:8501</code>) in your browser. Type a message in the chat input field and start interacting with the Claude-powered chatbot.</p>
 
 <h2 id="configuration">Configuration</h2>
-<p><strong>Anthropic API</strong>: The <code>config.json</code> file stores the API key for Anthropic's Claude model. Ensure this file is in the root directory.</p>
-<p><strong>Customizable Parameters</strong>: The creativity (temperature) and response length (max tokens) of the chatbot can be adjusted via sliders in the Streamlit sidebar.</p>
+<p><strong>Anthropic API Key</strong>: The application is configured using the <code>ANTHROPIC_API_KEY</code> environment variable. The official Anthropic Python library, used in this project, automatically detects and uses this variable.</p>
+<p><strong>Chat Parameters</strong>: The creativity (temperature) and response length (max tokens) of the chatbot can be adjusted in real-time via sliders in the Streamlit sidebar.</p>
 
 <h2 id="project-structure">Project Structure</h2>
 <pre><code>New-Repo/
 │
 ├── src/
 │   └── main.py               # Main script for Streamlit chatbot
-├── venv/                     # Virtual environment (excluded in .gitignore)
+├── .gitignore
 ├── requirements.txt           # Python dependencies
-├── config.json                # API key file (add this manually)
 ├── README.md                  # Project documentation
 └── LICENSE                    # License file (if any)
 </code></pre>
